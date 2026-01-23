@@ -39,7 +39,7 @@ interface FormQuestionProps {
   canGoNext: boolean;
   isFirst: boolean;
   isLast: boolean;
-  allAnswers: Record<string, string>;
+  allAnswers: Record<string, any>;
   direction: "left" | "right";
 }
 
@@ -224,12 +224,13 @@ export function FormQuestionWithValidation({
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  onChange(file.name);
-                  setValue(question.id as keyof FormData, file.name, {
-                    shouldValidate: true,
-                  });
-                }
+                if (!file) return;
+
+                // ✅ Store actual File (Blob)
+                onChange(file as any);
+                setValue(question.id as keyof FormData, file as any, {
+                  shouldValidate: true,
+                });
               }}
             />
 
@@ -240,7 +241,6 @@ export function FormQuestionWithValidation({
               className={cn(
                 "w-full rounded-xl border-2 border-dashed p-6 text-left transition-all",
                 "bg-card/40 backdrop-blur-sm hover:bg-card/70",
-                "focus:outline-none focus:ring-2 focus:ring-primary",
                 fieldError
                   ? "border-destructive"
                   : "border-border hover:border-primary",
@@ -253,10 +253,14 @@ export function FormQuestionWithValidation({
 
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {value ? "File selected" : "Upload your assignment"}
+                    {(value as any) instanceof File
+                      ? "File selected"
+                      : "Upload your assignment"}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {value || "PDF or Image • Max 10 MB"}
+                    {(value as any) instanceof File
+                      ? (value as any).name
+                      : "PDF or Image • Max 10 MB"}
                   </p>
                 </div>
               </div>

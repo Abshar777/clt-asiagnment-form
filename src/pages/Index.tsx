@@ -6,7 +6,6 @@ import { FormComplete } from "@/components/FormComplete";
 import { useToast } from "@/hooks/use-toast";
 import { formSchema, type FormData } from "@/lib/formSchema";
 
-
 interface Question {
   id: string;
   type:
@@ -105,7 +104,8 @@ const questions: Question[] = [
   {
     id: "offlineClassAvailability",
     type: "checkbox",
-    title: "9. If we are planning extra offline classes, when will you be free?",
+    title:
+      "9. If we are planning extra offline classes, when will you be free?",
     required: false,
     options: [
       "Sunday",
@@ -118,8 +118,6 @@ const questions: Question[] = [
   },
 ];
 
-
-
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<
     "welcome" | "questions" | "complete"
@@ -129,18 +127,18 @@ const Index = () => {
           | "welcome"
           | "questions"
           | "complete")
-      : "welcome"
+      : "welcome",
   );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
     localStorage.getItem("currentQuestionIndex")
       ? parseInt(localStorage.getItem("currentQuestionIndex") || "0")
-      : 0
+      : 0,
   );
 
-  const [answers, setAnswers] = useState<Record<string, string>>(
+  const [answers, setAnswers] = useState<Record<string, any>>(
     localStorage.getItem("answers")
       ? JSON.parse(localStorage.getItem("answers") || "{}")
-      : {}
+      : {},
   );
 
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -150,7 +148,7 @@ const Index = () => {
     localStorage.setItem("currentStep", currentStep);
     localStorage.setItem(
       "currentQuestionIndex",
-      currentQuestionIndex.toString()
+      currentQuestionIndex.toString(),
     );
     localStorage.setItem("answers", JSON.stringify(answers));
   }, [currentStep, currentQuestionIndex, answers]);
@@ -170,8 +168,7 @@ const Index = () => {
 
     // Basic validation for empty required fields
     console.log(currentQuestion.required, answer, "🟢");
-    if (currentQuestion.required && (!answer || answer.trim() === "")) {
-     
+    if (currentQuestion.required && (!answer || answer?.trim?.() === "")) {
       return;
     }
 
@@ -201,8 +198,6 @@ const Index = () => {
   const [ip, setIp] = useState("");
   const [locationData, setLocationData] = useState<any>(null);
 
-
-  
   useEffect(() => {
     const currentQuestion = questions[currentQuestionIndex];
     if (currentQuestion.type === "select") {
@@ -235,42 +230,81 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
 
   const url =
-    "https://script.google.com/macros/s/AKfycbyNbrlSXvaZjhIzUiEN4qfKDNnL5fbjdRdL3KESmylTCVejTvQDjQG9KpGtIRFYQ2i-Og/exec";
+    "https://script.google.com/macros/s/AKfycbxs87WlFFIOf_9Y6m8v_ulOIth6xHPSyFtywGAvqYtJ_MuPNcDX9gg8dxnf7xWkGrNS/exec";
   const handleSubmit = async () => {
-    setLoading(true);
+  setLoading(true);
+  console.log(answers, "answers");
+  
+  try {
+    // ✅ Convert file to base64
+    let fileData = null;
+    let fileName = "";
+    let mimeType = "";
 
-    try {
-      await fetch(url, {
-        method: "POST",
-     
-        body: JSON.stringify({
-          FullName: answers.fullName,
-          Email: answers.emailAddress,
-          PhoneNumber: answers.mobileNumber,
-          Occupation: answers.occupation,
-          GoalForWebinar: answers.goalForWebinar,
-          HeardAboutWebinar:"",
-         
-        }),
+    if (answers.assignmentUpload instanceof File) {
+      const file = answers.assignmentUpload;
+      fileName = file.name;
+      mimeType = file.type;
+      
+      // Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = reader.result.split(',')[1]; // Remove data:image/png;base64, prefix
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
-     
-      toast({
-        title: "Application Submitted Successfully!",
-        description:
-          "Thank you for your response. We will contact you soon. Let’s begin our learning journey from here!",
-      });
-      setAnswers({});
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Validation Error",
-        description: "Please check all fields and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      
+      fileData = base64;
     }
-  };
+
+    // ✅ Send as JSON instead of FormData
+    const payload = {
+      name: answers.name || "",
+      email: answers.email || "",
+      mobile: answers.mobile || "",
+      classDate: answers.classDate || "",
+      classAttended: answers.classAttended || "",
+      mentor: answers.mentor || "",
+      classFeedback: answers.classFeedback || "",
+      offlineAvailability: answers.offlineClassAvailability || "",
+      fileData: fileData,
+      fileName: fileName,
+      mimeType: mimeType,
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      // headers: {
+      //   "Content-Type": "application/json",
+      // },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    console.log(result);
+
+    toast({
+      title: "✅ Submitted Successfully",
+      description: "Your feedback and assignment were uploaded.",
+    });
+
+    localStorage.clear();
+    setAnswers({});
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "❌ Upload Failed",
+      description: "Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
   const handleRestart = async () => {
     await handleSubmit();
     setCurrentStep("welcome");
@@ -284,7 +318,7 @@ const Index = () => {
     : "";
   const canGoNext = currentQuestion
     ? !currentQuestion.required ||
-      (currentAnswer && currentAnswer.trim() !== "")
+      (currentAnswer && (currentAnswer as any)?.trim?.() !== "")
     : false;
 
   if (currentStep === "welcome") {
