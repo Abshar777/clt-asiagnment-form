@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Typeform-inspired design system for Delta Trading Academy form */
+
+@layer base {
+  :root {
+    /* Dark theme for trading academy */
+    --background: 220 15% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 15% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 15% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    /* White primary theme */
+    --primary: 0 0% 100%;
+    --primary-foreground: 220 15% 8%;
+
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 0 0% 100%;
+    --accent-foreground: 220 15% 8%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 25%;
+    --input: 220 15% 15%;
+    --ring: 0 0% 100%;
+
+    --radius: 16px;
+
+    /* Form-specific tokens */
+    --form-overlay: 220 15% 8% / 0.85;
+    --form-glow: 0 0% 100% / 0.3;
+    --form-button: 0 0% 100%;
+    --form-button-foreground: 220 15% 8%;
+    --form-button-hover: 0 0% 95%;
+
+    /* Typography */
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Always dark theme for trading form */
+}
+
+/* Enhanced animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--form-glow));
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--form-glow)), 0 0 80px hsl(var(--form-glow));
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Form component styles */
+.form-container {
+  background: linear-gradient(135deg, hsl(var(--form-overlay)), hsl(var(--form-overlay))),
+              url('/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.form-welcome {
+  animation: slideIn 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-question-enter {
+  animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-question-exit {
+  animation: slideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-logo {
+  animation: float 4s ease-in-out infinite;
+}
+
+.form-button {
+  background: hsl(var(--form-button));
+  color: hsl(var(--form-button-foreground));
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50px;
+}
+
+.form-button:hover {
+  background: hsl(var(--form-button-hover));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsl(var(--form-glow));
+}
+
+.form-input {
+  background: hsl(var(--input));
+  border: 2px solid hsl(var(--border));
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+}
+
+.form-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 4px hsl(var(--form-glow));
+  transform: translateY(-1px);
+}
+
+.form-option {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+}
+
+.form-option:hover {
+  transform: translateX(8px);
+  box-shadow: 0 4px 20px hsl(var(--form-glow));
+}
+
+.form-progress {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-card {
+  animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 24px;
+}
+
+.form-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
