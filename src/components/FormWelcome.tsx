@@ -21,7 +21,7 @@ export function FormWelcome({ onStart }: FormWelcomeProps) {
         <div className="space-y-8">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
-            STUDENT FORM
+            ASSAIGNMENT FORM
             </h1>
             {/* <h2 className="text-xl md:text-2xl text-muted-foreground font-medium mb-2">
             Why digital marketers will earn more in 2026
