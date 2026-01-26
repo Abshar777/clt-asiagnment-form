@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronRight, ChevronLeft, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, AlertCircle, X, Upload } from "lucide-react";
 import { formSchema, type FormData, getFieldError } from "@/lib/formSchema";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
+import { toast } from "sonner";
 
 interface Question {
   id: string;
@@ -26,6 +27,8 @@ interface Question {
   required: boolean;
   options?: string[];
   placeholder?: string;
+  multiple?: boolean; // Add this for multiple file support
+  maxFiles?: number; // Optional: limit number of files
 }
 
 interface FormQuestionProps {
@@ -58,6 +61,7 @@ export function FormQuestionWithValidation({
   direction,
 }: FormQuestionProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const {
     formState: { errors },
@@ -76,12 +80,19 @@ export function FormQuestionWithValidation({
     });
   }, [allAnswers, setValue]);
 
+  // Initialize selectedFiles from value if it's already an array
+  useEffect(() => {
+    if (question.type === "file" && Array.isArray(value)) {
+      setSelectedFiles(value as File[]);
+    } else if (question.type === "file" && (value as any) instanceof File) {
+      setSelectedFiles([value as any]);
+    }
+  }, [question.id]);
+
   const fieldError = getFieldError(question.id as keyof FormData, errors);
 
   const handleNext = async () => {
-    // Trigger validation for current field
     const isValid = await trigger(question.id as keyof FormData);
-
     if (isValid) {
       onNext();
     }
@@ -101,7 +112,65 @@ export function FormQuestionWithValidation({
   const handleChange = async (newValue: string) => {
     onChange(newValue);
     setValue(question.id as keyof FormData, newValue);
-    // Trigger validation after a short delay
+  };
+
+  // Handle multiple file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const maxFiles = question.maxFiles || 5; // Default max 5 files
+    if (files.length > maxFiles) {
+     toast.error(`You can only select up to ${maxFiles} files.`);
+     return;
+    }
+    
+    if (question.multiple) {
+      // Multiple files mode
+      const newFiles = [...selectedFiles, ...files].slice(0, maxFiles);
+      setSelectedFiles(newFiles);
+      onChange(newFiles as any);
+      setValue(question.id as keyof FormData, newFiles as any, {
+        shouldValidate: true,
+      });
+    } else {
+      // Single file mode
+      const file = files[0];
+      setSelectedFiles([file]);
+      onChange(file as any);
+      setValue(question.id as keyof FormData, file as any, {
+        shouldValidate: true,
+      });
+    }
+
+    // Reset input to allow selecting same file again
+    e.target.value = '';
+  };
+
+  // Remove a specific file
+  const removeFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    
+    if (question.multiple) {
+      onChange(newFiles as any);
+      setValue(question.id as keyof FormData, newFiles as any, {
+        shouldValidate: true,
+      });
+    } else {
+      onChange(null as any);
+      setValue(question.id as keyof FormData, null as any, {
+        shouldValidate: true,
+      });
+    }
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const slideVariants = {
@@ -124,6 +193,7 @@ export function FormQuestionWithValidation({
       fieldError ? "border-destructive" : "border-border"
     }`;
     const ref = useRef<any>(null);
+    
     useEffect(() => {
       ref.current?.focus();
     }, [question.id]);
@@ -151,6 +221,7 @@ export function FormQuestionWithValidation({
             )}
           </div>
         );
+      
       case "select":
         return (
           <div className="space-y-2 w-full max-w-md">
@@ -184,63 +255,32 @@ export function FormQuestionWithValidation({
             )}
           </div>
         );
-      case "date":
-        return (
-          <div className="w-full max-w-md">
-            <Input
-              ref={ref}
-              type="date"
-              value={value}
-              onChange={(e) => {
-                // const date = new Date(e.target.value);
-                // const day = date.getDate().toString().padStart(2, '0');
-                // const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                // const year = date.getFullYear();
-                onChange(e.target.value);
-              }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder={question.placeholder || "DD/MM/YYYY"}
-              className={baseClasses}
-            />
-            {fieldError && (
-              <div className="flex items-center space-x-2 mt-2 text-destructive text-sm">
-                <AlertCircle className="w-4 h-4" />
-                <span>{fieldError}</span>
-              </div>
-            )}
-          </div>
-        );
 
       case "file":
+        const maxFiles = question.maxFiles || 5;
+        const canAddMore = selectedFiles.length < maxFiles;
+
         return (
-          <div className="w-full max-w-md">
-            {/* Hidden native input */}
+          <div className="w-full max-w-md space-y-3">
+            {/* Hidden file input */}
             <input
               ref={ref}
               type="file"
-              accept=".pdf,image/*"
+              accept=".pdf,image/*,.doc,.docx"
+              multiple={question.multiple}
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                // ✅ Store actual File (Blob)
-                onChange(file as any);
-                setValue(question.id as keyof FormData, file as any, {
-                  shouldValidate: true,
-                });
-              }}
+              onChange={handleFileChange}
             />
 
-            {/* Custom UI */}
+            {/* Upload button/area */}
             <button
               type="button"
-              onClick={() => ref.current?.click()}
+              onClick={() => canAddMore && ref.current?.click()}
+              disabled={!canAddMore}
               className={cn(
                 "w-full rounded-xl border-2 border-dashed p-6 text-left transition-all",
-                "bg-card/40 backdrop-blur-sm hover:bg-card/70",
+                "bg-card/40 backdrop-blur-sm",
+                canAddMore ? "hover:bg-card/70 cursor-pointer" : "opacity-50 cursor-not-allowed",
                 fieldError
                   ? "border-destructive"
                   : "border-border hover:border-primary",
@@ -248,26 +288,75 @@ export function FormQuestionWithValidation({
             >
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 flex items-center justify-center rounded-lg bg-primary/10">
-                  📎
+                  <Upload className="w-6 h-6 text-primary" />
                 </div>
 
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {(value as any) instanceof File
-                      ? "File selected"
+                    {selectedFiles.length > 0
+                      ? question.multiple 
+                        ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`
+                        : "File selected"
                       : "Upload your assignment"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {(value as any) instanceof File
-                      ? (value as any).name
-                      : "PDF or Image • Max 10 MB"}
+                  <p className="text-xs text-muted-foreground">
+                    {question.multiple
+                      ? `PDF, Image, or Document • Max ${maxFiles} files`
+                      : "PDF, Image, or Document • Max 10 MB"}
                   </p>
                 </div>
               </div>
             </button>
 
+            {/* Selected files list */}
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="flex items-center justify-between p-3 rounded-lg bg-card/60 backdrop-blur-sm border border-border"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
+                        📄
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(index)}
+                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
             {fieldError && (
-              <p className="text-sm text-destructive mt-2">{fieldError}</p>
+              <p className="text-sm text-destructive mt-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {fieldError}
+              </p>
+            )}
+
+            {question.multiple && selectedFiles.length > 0 && canAddMore && (
+              <p className="text-xs text-muted-foreground text-center">
+                You can add {maxFiles - selectedFiles.length} more file{maxFiles - selectedFiles.length !== 1 ? 's' : ''}
+              </p>
             )}
           </div>
         );
@@ -304,6 +393,29 @@ export function FormQuestionWithValidation({
 
             {fieldError && (
               <p className="text-sm text-destructive mt-2">{fieldError}</p>
+            )}
+          </div>
+        );
+
+      case "date":
+        return (
+          <div className="w-full max-w-md">
+            <Input
+              ref={ref}
+              type="date"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={question.placeholder || "DD/MM/YYYY"}
+              className={baseClasses}
+            />
+            {fieldError && (
+              <div className="flex items-center space-x-2 mt-2 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>{fieldError}</span>
+              </div>
             )}
           </div>
         );
@@ -386,7 +498,7 @@ export function FormQuestionWithValidation({
           <div className="mb-8 flex justify-center">{renderInput()}</div>
 
           {/* Helper Text */}
-          {isFocused && question.type !== "select" && !fieldError && (
+          {isFocused && question.type !== "select" && question.type !== "file" && !fieldError && (
             <motion.div
               className="mb-6 flex justify-center"
               initial={{ opacity: 0, y: 10 }}
