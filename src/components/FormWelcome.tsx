@@ -31,6 +31,7 @@ export function FormWelcome({ onStart }: FormWelcomeProps) {
             </p>
           </div>
 
+
         {/* Start Button */}
         <div className="flex flex-col items-center space-y-4">
           <Button
