@@ -239,7 +239,7 @@ const Index = () => {
   }, [answers, currentQuestionIndex]);
 
   const url =
-    "https://script.google.com/macros/s/AKfycbx0_oFSFZI9rBSxQumk7V33NkcaZ8gZC3nVzRrbm2n9sJcI7u9gR51rjtE3CXFkV_4q/exec";
+    "https://script.google.com/macros/s/AKfycbzs85JidWCxrrb_cD_74K0qvvi9sTlNedOWuZyCAAXTGaAN3ubhoPJqquEl6bYmvyQV/exec";
 
   // Convert File to base64
   const fileToBase64 = (file: File): Promise<string> => {
